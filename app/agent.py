@@ -28,6 +28,16 @@ class LabAgent:
         self.model = model
         self.llm = FakeLLM(model=model)
 
+    # ── Child observation 1: retrieval (span / retriever) ───────────
+    @observe(name="retrieval", as_type="retriever", capture_input=False, capture_output=False)
+    def _run_retrieval(self, message: str) -> list[str]:
+        return retrieve(message)
+
+    # ── Child observation 2: LLM call (generation) ──────────────────
+    @observe(name="llm-call", as_type="generation", capture_input=False, capture_output=False)
+    def _run_generation(self, prompt_text: str):
+        return self.llm.generate(prompt_text)
+
     @observe(name="lab-agent-run", as_type="agent", capture_input=False, capture_output=False)
     def run(
         self,
@@ -51,7 +61,9 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+
+            docs = self._run_retrieval(message)
+
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
@@ -59,6 +71,7 @@ class LabAgent:
                 message=message,
                 enabled=tracing_enabled(),
             )
+
             langfuse_client.update_current_span(
                 metadata={
                     "doc_count": len(docs),
@@ -71,13 +84,15 @@ class LabAgent:
                 },
                 version=prompt.version,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
+
             with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
+                response = self._run_generation(prompt.text)
+
             quality_score = self._heuristic_quality(message, response.text, docs)
             latency_ms = int((time.perf_counter() - started) * 1000)
-            cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
+            cost_usd = self._estimate_cost(
+                response.usage.input_tokens, response.usage.output_tokens
+            )
 
         metrics.record_request(
             latency_ms=latency_ms,
@@ -109,7 +124,9 @@ class LabAgent:
             score += 0.2
         if len(answer) > 40:
             score += 0.1
-        if question.lower().split()[0:1] and any(token in answer.lower() for token in question.lower().split()[:3]):
+        if question.lower().split()[0:1] and any(
+            token in answer.lower() for token in question.lower().split()[:3]
+        ):
             score += 0.1
         if "[REDACTED" in answer:
             score -= 0.2

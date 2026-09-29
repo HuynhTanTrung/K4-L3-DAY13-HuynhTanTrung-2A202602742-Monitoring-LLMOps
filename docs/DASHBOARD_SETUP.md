@@ -6,14 +6,14 @@ Trường `query` trong YAML là pseudocode mô tả phép tính, không phải 
 
 ## Mapping dữ liệu
 
-| Panel | Event/field | Phép tổng hợp |
-|---|---|---|
-| Latency | `response_sent.latency_ms/ttft_ms` | latency P50/P95/P99 và TTFT P95 |
-| Traffic | `request_received` | count, request/phút |
-| Errors | `request_received`, `request_failed`, `error_type`, `tool_success` | error rate, breakdown và retrieval success |
-| Cost | `response_sent.cost_usd` | tổng theo phút và toàn cửa sổ |
-| Tokens | `response_sent.tokens_in/tokens_out` | tổng theo từng field |
-| Quality | `response_sent.quality_score` | mean |
+| Panel   | Event/field                                                                                    | Phép tổng hợp                              |
+| ------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Latency | `response_sent.latency_ms/ttft_ms`                                                             | latency P50/P95/P99 và TTFT P95            |
+| Traffic | `request_received`                                                                             | count, request/phút                        |
+| Errors  | `request_received`, `request_failed`, `error_type`, `tool_succepip install streamlit pandasss` | error rate, breakdown và retrieval success |
+| Cost    | `response_sent.cost_usd`                                                                       | tổng theo phút và toàn cửa sổ              |
+| Tokens  | `response_sent.tokens_in/tokens_out`                                                           | tổng theo từng field                       |
+| Quality | `response_sent.quality_score`                                                                  | mean                                       |
 
 Giữ time range mặc định 60 phút, refresh 30 giây và hiển thị threshold/SLO line. Giá trị chính xác nằm trong `config/dashboard.yaml`; không tự đổi contract chỉ để ảnh dashboard đẹp hơn.
 

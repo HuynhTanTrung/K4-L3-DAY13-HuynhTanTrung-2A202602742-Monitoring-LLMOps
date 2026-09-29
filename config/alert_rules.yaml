@@ -1,25 +1,61 @@
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  # ALERT 1: Latency SLO burn — triệu chứng user thấy chậm
+  - name: high_latency_p95
+    severity: critical
+    condition: >
+      percentile(latency_ms, 95) > 3000
+      over 5m window, sustained 10m
+    duration: 10m
     type: symptom-based
+    sli_ref: fast_successful_requests
+    user_impact: >
+      Người dùng chờ > 3 giây cho câu trả lời; SLO p95 bị vi phạm;
+      error budget đang bị đốt với burn rate cao.
     channel: slack
-    owner: TODO
+    slack_channel: "#alerts-llmops-critical"
+    owner: "@oncall-llmops"
     runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    annotations:
+      summary: "p95 latency vượt 3000ms trong 10 phút"
+      dashboard_panel: latency
+
+  # ALERT 2: Error rate tăng — triệu chứng user thấy lỗi
+  - name: high_error_rate
+    severity: critical
+    condition: >
+      count(event == "request_failed") / count(event == "request_received") * 100 > 2
+      over 5m window, sustained 5m
+    duration: 5m
     type: symptom-based
+    sli_ref: fast_successful_requests
+    user_impact: >
+      Hơn 2% request trả lỗi 500; người dùng không nhận được câu trả lời;
+      error budget bị đốt nhanh.
     channel: slack
-    owner: TODO
+    slack_channel: "#alerts-llmops-critical"
+    owner: "@oncall-llmops"
     runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    annotations:
+      summary: "Error rate > 2% trong 5 phút"
+      dashboard_panel: errors
+
+  # ALERT 3: Retrieval success giảm — triệu chứng chất lượng câu trả lời giảm
+  - name: low_retrieval_success
+    severity: warning
+    condition: >
+      count(tool_success == true) / count(tool_success != null) * 100 < 90
+      over 10m window, sustained 15m
+    duration: 15m
     type: symptom-based
+    sli_ref: fast_successful_requests
+    user_impact: >
+      Retrieval thất bại > 10%; agent trả lời thiếu context;
+      quality_score có thể giảm dưới 0.75; trải nghiệm người dùng suy giảm
+      dù request vẫn 200 OK.
     channel: slack
-    owner: TODO
+    slack_channel: "#alerts-llmops-warning"
+    owner: "@team-rag"
     runbook: docs/alerts.md#alert-3
+    annotations:
+      summary: "Retrieval success < 90% trong 15 phút"
+      dashboard_panel: errors
